@@ -1,0 +1,11 @@
+include:
+  - salt.minion
+  - php
+  - nginx
+  - redis
+  - mysql.mycnf
+  - mysql.client
+  - applications.wordpress
+  - applications.wordpress.directories
+  - applications.wordpress.config
+  - nfs.client

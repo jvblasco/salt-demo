@@ -1,0 +1,41 @@
+{%- extends 'nginx/files/vhosts/base' -%}
+{%- block vhost -%}
+    index index.html index.htm index.php;
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+        expires off;
+    }
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
+        expires max;
+        log_not_found off;
+    }
+    location = /wp-config.php {
+        return 403;
+    }
+    location = /xmlrpc.php {
+        return 403;
+    }
+    location ~ .php$ {
+        if (!-e $request_filename) {
+            rewrite / /index.php last;
+        }
+        expires off;
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_pass {{ app['name'] }}_users;
+    }
+    location = /wp-login.php {
+        auth_basic "Sebafactory restricted";
+        auth_basic_user_file /etc/nginx/htpasswd;
+        expires off;
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_pass {{ app['name'] }}_admins;
+    }
+    location /{{ app['admin_url'] }} {
+        auth_basic "Sebafactory restricted";
+        auth_basic_user_file /etc/nginx/htpasswd;
+    }
+{%- endblock vhost %}

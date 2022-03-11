@@ -1,0 +1,21 @@
+{# Set distribution packages here #}
+{% set os_map = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': {
+            'server': 'openssh-server',
+        }
+    },
+    'RedHat': {}
+}) %}
+
+{# Settings dictionary with default values #}
+{% set openssh_settings = {
+    'keepalive': True,
+    'banner': True
+} %}
+
+{# Merge the os_map with the settings dictionary #}
+{% do openssh_settings.update(os_map) %}
+
+{# Merge pillar data with the settings #}
+{% do openssh_settings.update(salt['pillar.get']('services:ssh', {})) %}

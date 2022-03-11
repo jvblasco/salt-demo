@@ -1,0 +1,11 @@
+{%- extends 'nginx/files/vhosts/base' -%}
+{%- block vhost -%}
+    index index.html index.htm;
+    try_files $uri $uri/ /index.html;
+    charset utf-8;
+    location ~* \.(png|gif|jpg|jpeg|css|js|swf|ico|bmp|pdf|doc|docx|ppt|pptx|zip)$ {
+        access_log off;
+        expires 30d;
+        try_files $uri 404;
+    }
+{%- endblock vhost %}

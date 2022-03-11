@@ -1,0 +1,26 @@
+{# Set distribution packages here #}
+{% set os_map = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': {
+            'server': 'nginx',
+        }
+    },
+    'RedHat': {}
+}) %}
+
+{# Settings dictionary with default values #}
+{% set nginx_settings = {
+    'certificates': salt['pillar.get']('certificates', False),
+    'fastcgi_buffer_size': '32k',
+    'fastcgi_buffers': '16k',
+    'proxy_read_timeout': '3m',
+    'htpasswd_users': [
+        {'name': 'sebafactory_default', 'password': 'db848baa3668432ea4ff6d66c47f77f5'}
+    ]
+} %}
+
+{# Merge the os_map with the settings dictionary #}
+{% do nginx_settings.update(os_map) %}
+
+{# Merge pillar data with the settings #}
+{% do nginx_settings.update(salt['pillar.get']('services:nginx', {})) %}

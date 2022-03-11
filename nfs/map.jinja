@@ -1,0 +1,27 @@
+{# Set distribution packages here #}
+{% set os_map = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': {
+            'server': 'nfs-kernel-server',
+            'client': 'nfs-common',
+        }
+    },
+    'RedHat': {}
+}) %}
+
+{# Settings dictionary with default values #}
+{% set nfs_settings = {
+    'exports': {
+        'exportname': {
+	    'path': '/srv/export',
+	    'hosts': '0.0.0.0/0'
+	}
+    }
+} %}
+
+{# Merge the os_map with the settings dictionary #}
+{% do nfs_settings.update(os_map) %}
+
+{# Merge pillar data with the settings #}
+{% do nfs_settings.pop('exports') %}
+{% do nfs_settings.update({'exports': salt['pillar.get']('services:nfs:exports', {})}) %}

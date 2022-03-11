@@ -1,0 +1,12 @@
+include:
+  - salt.minion
+  - php
+  - nginx
+  - mysql
+  - redis
+  - applications.common.databases
+  - applications.common.directories
+  - applications.magento2
+  - applications.magento2.cron
+  - composer
+  - varnish

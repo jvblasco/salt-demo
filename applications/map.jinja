@@ -1,0 +1,88 @@
+{# Settings dictionary with default values #}
+{% set apps_settings = {} %}
+
+{# Set applications data #}
+{% set applications = salt['pillar.get']('applications', False) %}
+{% set applist = [] %}
+{% set pillars = {
+    'app': '',
+    'db': '',
+    'site': '',
+}%}
+{% if applications %}
+{% for type, apps in applications.items() %}
+{% for appname, data in apps.items() %}
+
+{% do pillars.update({'app': 'applications:' + type + ':' + appname}) %}
+
+{% set databases = [] %}
+{% if salt['pillar.get'](pillars['app'] + ':databases', False) %}
+{# Set application databases #}
+{% for dbname, config in data['databases'].items() %}
+{% do pillars.update({'db': pillars['app'] + ':databases:' + dbname}) %}
+{% do databases.append({
+    'name': dbname,
+    'user': config['user'],
+    'password': config['password'],
+    'host': config['host'],
+    'prefix': salt['pillar.get'](pillars['db'] + ':prefix', False),
+    'main': salt['pillar.get'](pillars['db'] + ':main', False),
+    'type': salt['pillar.get'](pillars['db'] + ':type', 'mysql'),
+    'port': salt['pillar.get'](pillars['db'] + ':prefix', '3306'),
+    'ro_users': salt['pillar.get'](pillars['db'] + ':ro_users', False)
+}) %}
+{% endfor %}
+{% endif %}
+
+{# Set application sites #}
+{% set sites = [] %}
+{% for sitename, config in data['sites'].items() %}
+{% do pillars.update({'site': pillars['app'] + ':sites:' + sitename}) %}
+{% do sites.append({
+    'name': sitename,
+    'main_domain': config['main_domain'],
+    'extra_domains': salt['pillar.get'](pillars['site'] + ':extra_domains', False),
+    'ssl': salt['pillar.get'](pillars['site'] + ':ssl', False),
+    'auth': salt['pillar.get'](pillars['site'] + ':auth', False),
+    'protections': salt['pillar.get'](pillars['site'] + ':protections', False),
+    'force_index': salt['pillar.get'](pillars['site'] + ':force_index', False),
+    'enable_rss': salt['pillar.get'](pillars['site'] + ':enable_rss', False),
+    'main': salt['pillar.get'](pillars['site'] + ':main', False),
+    'rewrites': salt['pillar.get'](pillars['site'] + ':rewrites', False),
+    'extra_frontend_config_base': salt['pillar.get'](pillars['site'] + ':extra_frontend_config_base', False),
+    'extra_frontend_config_vhost': salt['pillar.get'](pillars['site'] + ':extra_frontend_config_vhost', False),
+    'extra_balancer_config': salt['pillar.get'](pillars['site'] + ':extra_balancer_config', False),
+    'letsencrypt': salt['pillar.get'](pillars['site'] + ':letsencrypt', False)
+}) %}
+{% endfor %}
+
+{% do applist.append({
+    'name': appname,
+    'type': type,
+    'user': salt['pillar.get'](pillars['app'] + ':user', appname),
+    'group': salt['pillar.get'](pillars['app'] + ':user', appname),
+    'language': salt['pillar.get'](pillars['app'] + ':language', 'Nolang'),
+    'api': salt['pillar.get'](pillars['app'] + ':api', False),
+    'balancer': salt['pillar.get'](pillars['app'] + ':balancer', False),
+    'forgot_password_fix': salt['pillar.get'](pillars['app'] + ':forgot_password_fix', False),
+    'admin_url': salt['pillar.get'](pillars['app'] + ':admin_url', 'appadmin'),
+    'base_domain': salt['pillar.get'](pillars['app'] + ':base_domain', appname + '_' + type),
+    'varnish': salt['pillar.get'](pillars['app'] + ':varnish', False),
+    'databases': databases,
+    'sites': sites,
+    'mounts': {
+        'mount_name': {
+        'device': '127.0.0.1:/srv/shared',
+        }
+    }
+}) %}
+
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% do apps_settings.update({'applications': applist|sort(attribute='name')}) %}
+
+{% for app in apps_settings.applications %}
+{% do app.pop('mounts') %}
+{% do app.update({'mounts': salt['pillar.get']('applications:' + app['type'] + ':' + app['name'] + ':mounts', False)}) %}
+{% endfor %}

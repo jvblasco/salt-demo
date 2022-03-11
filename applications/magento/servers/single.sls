@@ -1,0 +1,11 @@
+include:
+  - salt.minion
+  - php
+  - nginx
+  - mysql
+  - redis
+  - applications.magento
+  - applications.magento.cron
+  - applications.magento.directories
+  - applications.magento.config
+  - applications.magento.databases

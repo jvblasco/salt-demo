@@ -1,0 +1,2 @@
+Cmnd_Alias SEBAFACTORY_DEVELOPERS = /usr/bin/salt-key -L, /usr/bin/salt-run
+%developers ALL=(ALL) NOPASSWD: SEBAFACTORY_DEVELOPERS

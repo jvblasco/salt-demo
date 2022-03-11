@@ -1,0 +1,39 @@
+{# Set distribution packages here #}
+{% set os_map = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': {
+            'server': 'varnish',
+        }
+    },
+    'RedHat': {}
+}) %}
+
+{# Settings dictionary with default values #}
+{% set varnish_settings = {
+    'vcl_file': '/etc/varnish/varnish.vcl',
+    'listen_address': '127.0.0.1',
+    'listen_port': '6081',
+    'backend_address': '127.0.0.1',
+    'backend_port': '10080',
+    'malloc': '128M',
+    'params': {
+        'thread_pools': 2,
+        'cli_buffer': 16384,
+        'feature': '+esi_disable_xml_check,+esi_ignore_other_elements',
+        'vsl_reclen': 4084,
+        'syslog_cli_traffic': 'off',
+        'thread_pool_max': 1000,
+        'vcc_allow_inline_c': 'on',
+        'thread_pool_timeout': 300,
+        'thread_pool_min': 100,
+    },
+} %}
+
+{# Merge the os_map with the settings dictionary #}
+{% do varnish_settings.update(os_map) %}
+
+{# Merge pillar data with the settings #}
+{% set pillar = salt['pillar.get']('services:varnish', {}) %}
+{% set params = pillar.pop('params', {}) %}
+{% do varnish_settings.update(pillar) %}
+{% do varnish_settings['params'].update(params) %}

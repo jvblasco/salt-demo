@@ -1,0 +1,31 @@
+{# Set distribution packages here #}
+{% set os_map = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': {
+            'server': 'salt-master',
+            'client': 'salt-minion'
+        }
+    },
+    'RedHat': {}
+}) %}
+
+{# Settings dictionary with default values #}
+{% set salt_settings = {
+    'pillar_repository': 'slug-pillar-repository',
+    'modules': True,
+    'keys': {
+        'privkey': 'ssh-private-key',
+        'pubkey': 'ssh-public-key'
+    },
+    'minion': {
+        'master': '127.0.0.1',
+        'keepalive': True
+    }
+} %}
+
+{# Merge the os_map with the settings dictionary #}
+{% do salt_settings.update(os_map) %}
+
+{# Merge pillar data with the settings #}
+{% do salt_settings.update(salt['pillar.get']('services:salt', {})) %}
+{% do salt_settings['minion'].update({'keepalive': True}) %}

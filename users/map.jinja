@@ -1,0 +1,13 @@
+{# Settings dictionary with default values #}
+{% set users_settings = {
+    'users': {
+        'seba': {
+            'pubkeys': ['ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDVKHYxgC1TnSVmGklFpYBjvDOIQa2fq7sslzEct5z9RVS/pCrhMEdDd80MkEhQp4Vb9nsPcUBD78lG6gmSqSwU48kcRxUPLlwaKdrbC0u+/gzZuwJNT7GNrwBDnowj8ExGFu9qD828KcG8CXOpIGHNityFybrY3ZhWnhokOs/IXK0911zvVy/7n1G5zabdqlMJDIwcRAh+O+nQFQWqvwU2Ic/gK9ut2Nm/pH9FR+uyNe1aLMk31A53swcD2NihFQLTEy1KrwqePqKGBgNKO/Q+tQduSP3xH/wgYvT19fEDjw7Om9jUC1bxKqc72thZl6jn8tPH9BPD6iYHNfHwZ3wpJb4WgMVMNxpM9eIprC5KosoI18o3z7IfbzuWEYjlNTNyx39WlTA9Q2XgbDpvPE//J3x/C1RCvo21tiUEQ6Jb1xQavD9078sPMUSvMkr5/3c3/LCac1U5SN04BlBV5a/dCrQ4cV/bGBNKYBirkAx1K8ahRyASDsYIHnOd5kBLLb1U6yFXUwxkyE9EqKRnSazlztlljkVU/TgjiSeZWp+0ulBBOmhYPOj3j6jK4QXbDedzAaqGBIQ2YifLYbP6N/1/mFn/NnCnDpoaMDuiomAcRtdtjn8HsgD1SkmT1QJjk6i1SzWqOL4EaW7ecVMWI2duEOWv/jmJKB7kbgovrN0RPQ== seba@sebafactory.com'],
+            'role': admin,
+            'password': False
+        }
+    }
+} %}
+
+{# Merge pillar data with the settings #}
+{% do users_settings['users'].update(salt['pillar.get']('users', {})) %}

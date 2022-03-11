@@ -1,0 +1,21 @@
+{# Set distribution packages here #}
+{% set os_map = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': {
+            'server': 'redis-server',
+        }
+    },
+    'RedHat': {}
+}) %}
+
+{# Settings dictionary with default values #}
+{% set redis_settings = {
+    'maxmemory': '256mb',
+    'bind': '127.0.0.1'
+} %}
+
+{# Merge the os_map with the settings dictionary #}
+{% do redis_settings.update(os_map) %}
+
+{# Merge pillar data with the settings #}
+{% do redis_settings.update(salt['pillar.get']('services:redis', {})) %}

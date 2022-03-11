@@ -1,0 +1,16 @@
+{%- extends 'nginx/files/vhosts/base' -%}
+{%- block vhost -%}
+        location ~* \.(png|gif|jpg|jpeg|css|js|swf|ico|bmp|pdf|doc|docx|ppt|pptx|zip|eot|ttf|woff|woff2|svg|otf)$ {
+        access_log off;
+        proxy_pass http://127.0.0.1:10080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+    location / {
+        proxy_pass http://127.0.0.1:10080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+{%- endblock vhost %}

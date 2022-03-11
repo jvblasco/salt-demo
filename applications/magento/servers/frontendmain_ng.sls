@@ -1,0 +1,13 @@
+include:
+  - salt.minion
+  - php
+  - nginx
+  - redis
+  - mysql.mycnf
+  - mysql.client
+  - applications.magento
+  - applications.magento.cron
+  - applications.magento.directories.common
+  - nfs.ng.client
+  - applications.magento.directories.shared
+  - applications.magento.config

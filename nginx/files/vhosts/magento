@@ -1,0 +1,191 @@
+{%- extends 'nginx/files/vhosts/base' -%}
+{%- block vhost -%}
+    if ($http_x_forwarded_proto = "https") {
+        set $fastcgi_https "on";
+    }
+    location /sitemap.xml {
+        try_files $uri 404;
+    }
+    location /sitemaps {
+        try_files $uri 404;
+    }
+    {%- if app['forgot_password_fix'] %}
+    location = /js/index.php/x.js {
+        expires -1;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_read_timeout 10m;
+        fastcgi_param SCRIPT_FILENAME $document_root/js/index.php;
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_NAME /js/index.php;
+        fastcgi_pass {{ app['name'] }}_users;
+    }
+    {%- endif %}
+    location ~ ^/(skin|css|media|js)/ {
+        access_log off;
+        expires 30d;
+        # May this be a try_files?
+        if (!-f $request_filename) {
+            return 404;
+        }
+        # May this be implemented with a location?
+        if ($request_filename ~* ^.*?\.(eot|ttf|woff|woff2|svg|otf)$) {
+            add_header Access-Control-Allow-Origin *;
+        }
+    }
+    location /dev/ {
+        deny all;
+    }
+    location ~* /(lib|media|includes|skin|var|downloader|app)/.*\.php$ {
+        deny all;
+    }
+    location ~* /(lib|includes|var|downloader|app)/.*\.xml$ {
+        deny all;
+    }
+    {%- if not site['enable_rss'] %}
+    location ~ /index\.php/rss/? {
+        deny all;
+    }
+    location ~ rss/(order|catalog) {
+        deny all;
+    }
+    {%- endif %}
+    location ~ /index\.php/install/? {
+        deny all;
+    }
+    location ~ \.(sh|pl|swp|phar|sql|conf|zip|tar|gz|phtml)$ {
+        deny all;
+    }
+    location /includes/ {
+        deny all;
+    }
+    location /lib/ {
+        deny all;
+    }
+    location /media/downloadable/ {
+        deny all;
+    }
+    location /pkginfo/ {
+        deny all;
+    }
+    location /report/config.xml {
+        deny all;
+    }
+    location /var/ {
+        deny all;
+    }
+    location = /RELEASE_NOTES.txt {
+        deny all;
+    }
+    location = /LICENSE_AFL.txt {
+        deny all;
+    }
+    location = /LICENSE.html {
+        deny all;
+    }
+    location = /LICENSE.txt {
+        deny all;
+    }
+    location = /php.ini.sample {
+        deny all;
+    }
+    location = /phpinfo.php {
+        deny all;
+    }
+    location = /composer.json {
+        deny all;
+    }
+    location = /index.php.sample {
+        deny all;
+    }
+    location  /. {
+        return 404;
+    }
+    location = /hacheck.php {
+        access_log off;
+    }
+    location ~* \.(png|gif|jpg|jpeg|css|js|swf|ico|bmp|pdf|doc|docx|ppt|pptx|zip)$ {
+        access_log off;
+        expires 30d;
+        if (!-f $request_filename) {
+            return 404;
+        }
+    }
+    location /var/export {
+        auth_basic "Sebafactory Restricted";
+        auth_basic_user_file htpasswd;
+        autoindex on;
+    }
+    location ~* ^(/404|/report)/(.*) {
+        include /etc/nginx/fastcgi_params;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$1/index.php$1;
+        fastcgi_read_timeout 600;
+        fastcgi_pass {{ app['name'] }}_users;
+    }
+    {%- if app['api'] %}
+    location ~ ^/api/(.*) {
+        rewrite ^/api/rest /api.php?type=rest last;
+        rewrite ^/api/v2_soap /api.php?type=v2_soap last;
+        rewrite ^/api/soap /api.php?type=soap last;
+    }
+    location ~ ^/api(.*) {
+        expires -1;
+        # try_files $uri $uri/ @handler;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_read_timeout 10m;
+        fastcgi_param SCRIPT_FILENAME $document_root/api.php;
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_NAME /api.php;
+        fastcgi_pass {{ app['name'] }}_admins;
+    }
+    {%- endif %}
+    location ~ /(index.php|{{ app['admin_url'] }}|admin)(.*) {
+        expires -1;
+        # try_files $uri $uri/ @handler;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_read_timeout 10m;
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_pass {{ app['name'] }}_admins;
+    }
+    location @handler {
+        rewrite / /index.php;
+    }
+    location ~ \.php/ {
+        rewrite ^(.*.php)/ $1 last;
+    }
+    {%- if site['force_index'] %}
+    location ~ \.php$ {
+        expires off;
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_FILENAME  $document_root/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        include fastcgi_params;
+        fastcgi_pass {{ app['name'] }}_users;
+    }
+    {%- else %}
+    location ~ \.php$ {
+        try_files $uri =404;
+        expires off;
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_pass {{ app['name'] }}_users;
+    }
+    {%- endif %}
+    {%- if extra_frontend_config_vhost is defined %}
+    # START extra frontend vhost configuration from pillar
+    {{ extra_frontend_config_vhost | indent(4) }}
+    # END extra frontend vhost configuration from pillar
+    {%- endif %}
+    location / {
+        expires -1;
+        # try_files $uri $uri/ @handler;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_pass {{ app['name'] }}_users;
+    }
+{%- endblock vhost %}

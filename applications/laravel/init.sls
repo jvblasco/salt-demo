@@ -1,0 +1,2 @@
+include:
+  - applications.laravel.packages

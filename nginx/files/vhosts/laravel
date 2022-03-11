@@ -1,0 +1,26 @@
+{%- extends 'nginx/files/vhosts/base' -%}
+{%- block vhost -%}
+    index index.html index.htm index.php;
+    charset utf-8;
+    sendfile off;
+    location / {
+        try_files $uri $uri/ /index.php$is_args$args;
+    }
+    location ~* \.(png|gif|jpg|jpeg|css|js|swf|ico|bmp|pdf|doc|docx|ppt|pptx|zip)$ {
+        access_log off;
+        expires 30d;
+        if (!-f $request_filename) {
+            return 404;
+        }
+    }
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass {{ app['name'] }}_users;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        #fastcgi_intercept_errors off;
+        #fastcgi_buffer_size 16k;
+        #fastcgi_buffers 4 16k;
+    }
+{%- endblock vhost %}

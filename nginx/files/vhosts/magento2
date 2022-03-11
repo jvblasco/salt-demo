@@ -1,0 +1,216 @@
+{%- extends 'nginx/files/vhosts/base' -%}
+{%- block vhost -%}
+    root $APP_ROOT/pub;
+    index index.php;
+    charset UTF-8;
+    error_page 404 403 = /errors/404.php;
+    #rewrite ^/(.*)/sitemap.xml  /sitemaps/$1/sitemap.xml last;
+    if ($http_x_forwarded_proto = "https") {
+        set $fastcgi_https "on";
+    }
+    location ~* \.(pl|cgi|py|sh|lua)$ {
+        deny all;
+    }
+    location /shell {
+        deny all;
+    }
+    location ~* ^/update($|/) {
+        deny all;
+    }
+    location ~* ^/setup($|/) {
+        deny all;
+    }
+    location /downloader {
+        deny all;
+    }
+    location /dev/ {
+        deny all;
+    }
+    location ~* /(lib|media|includes|skin|var|downloader|app)/.*\.php$ {
+        deny all;
+    }
+    location ~* /(lib|includes|var|downloader|app)/.*\.xml$ {
+        deny all;
+    }
+    {%- if not site['enable_rss'] %}
+    location ~ /index\.php/rss/? {
+        deny all;
+    }
+    location ~ rss/(order|catalog) {
+        deny all;
+    }
+    {%- endif %}
+    location ~ /index\.php/install/? {
+        deny all;
+    }
+    location ~ \.(sh|pl|swp|phar|sql|conf|zip|tar|gz|phtml)$ {
+        deny all;
+    }
+    location /includes/ {
+        deny all;
+    }
+    location /lib/ {
+        deny all;
+    }
+    location /media/customer/ {
+        deny all;
+    }
+    location /media/downloadable/ {
+        deny all;
+    }
+    location /media/import/ {
+        deny all;
+    }
+    location /pkginfo/ {
+        deny all;
+    }
+    location /report/config.xml {
+        deny all;
+    }
+    location /var/ {
+        deny all;
+    }
+    location = /RELEASE_NOTES.txt {
+        deny all;
+    }
+    location = /LICENSE_AFL.txt {
+        deny all;
+    }
+    location = /LICENSE.html {
+        deny all;
+    }
+    location = /LICENSE.txt {
+        deny all;
+    }
+    location = /COPYING.txt {
+        deny all;
+    }
+    location = /CHANGELOG.md {
+        deny all;
+    }
+    location = /php.ini.sample {
+        deny all;
+    }
+    location = /nginx.conf.sample {
+        deny all;
+    }
+    location = /package.json.sample {
+        deny all;
+    }
+    location = /auth.json.sample {
+        deny all;
+    }
+    location = /Gruntfile.js.sample {
+        deny all;
+    }
+    location = /grunt-config.json.sample {
+        deny all;
+    }
+    location = /phpinfo.php {
+        deny all;
+    }
+    location = /index.php.sample {
+        deny all;
+    }
+    location = /composer.json {
+        deny all;
+    }
+    location = /composer.lock {
+        deny all;
+    }
+    location  /. {
+        return 404;
+    }
+    location = /hacheck.php {
+        access_log off;
+    }
+    #location ~* \.(png|gif|jpg|jpeg|css|js|swf|ico|bmp|pdf|doc|docx|ppt|pptx|zip)$ {
+    #    access_log off;
+    #    expires 30d;
+    #    if (!-f $request_filename) {
+    #        return 404;
+    #    }
+    #}
+    location /var/export/ {
+        auth_basic "Restricted";
+        auth_basic_user_file htpasswd;
+        autoindex on;
+    }
+    location / {
+        try_files $uri $uri/  /index.php?$args;
+    }
+    location /pub/ {
+        location ~ ^/pub/media/(downloadable|customer|import|theme_customization/.*\.xml) {
+            deny all;
+        }
+        alias $APP_ROOT/pub/;
+        add_header X-Frame-Options "SAMEORIGIN";
+    }
+    location /static/ {
+        expires max;
+        location ~ ^/static/version {
+            rewrite ^/static/(version\d*/)?(.*)$ /static/$2 last;
+        }
+        location ~* \.(ico|jpg|jpeg|png|gif|svg|js|css|swf|eot|ttf|otf|woff|woff2)$ {
+            add_header Cache-Control "public";
+            add_header X-Frame-Options "SAMEORIGIN";
+            expires +1y;
+            if (!-f $request_filename) {
+                rewrite ^/static/?(.*)$ /static.php?resource=$1 last;
+            }
+        }
+        location ~* \.(zip|gz|gzip|bz2|csv|xml)$ {
+            add_header Cache-Control "no-store";
+            add_header X-Frame-Options "SAMEORIGIN";
+            expires off;
+            if (!-f $request_filename) {
+               rewrite ^/static/?(.*)$ /static.php?resource=$1 last;
+            }
+        }
+        if (!-f $request_filename) {
+            rewrite ^/static/?(.*)$ /static.php?resource=$1 last;
+        }
+        add_header X-Frame-Options "SAMEORIGIN";
+    }
+    location /media/ {
+        try_files $uri $uri/ /get.php$is_args$args;
+        location ~ ^/media/theme_customization/.*\.xml {
+            deny all;
+        }
+        location ~* \.(ico|jpg|jpeg|png|gif|svg|js|css|swf|eot|ttf|otf|woff|woff2)$ {
+            add_header Cache-Control "public";
+            add_header X-Frame-Options "SAMEORIGIN";
+            expires +1y;
+            try_files $uri $uri/ /get.php$is_args$args;
+        }
+        location ~* \.(zip|gz|gzip|bz2|csv|xml)$ {
+            add_header Cache-Control "no-store";
+            add_header X-Frame-Options "SAMEORIGIN";
+            expires off;
+            try_files $uri $uri/ /get.php$is_args$args;
+        }
+        add_header X-Frame-Options "SAMEORIGIN";
+    }
+    location ~* /(index.php|{{ app['admin_url'] }}|admin|api|rest)/(.*) {
+        include /etc/nginx/fastcgi_params;
+	fastcgi_param  PHP_FLAG  "session.auto_start=off \n suhosin.session.cryptua=off";
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param SERVER_PORT "443";
+        fastcgi_pass {{ app['name'] }}_admins;
+    }
+    location ~ (index|get|static|report|404|503|health_check)\.php$ {
+        try_files $uri =404;
+	include /etc/nginx/fastcgi_params;
+	fastcgi_param  PHP_FLAG  "session.auto_start=off \n suhosin.session.cryptua=off";
+        fastcgi_param HTTPS $fastcgi_https;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+        fastcgi_param SERVER_PORT "443";
+        fastcgi_pass {{ app['name'] }}_users;
+    }
+    location ~* (\.php$|\.htaccess$|\.git) {
+        deny all;
+    }
+{%- endblock vhost %}

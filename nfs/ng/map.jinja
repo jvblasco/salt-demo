@@ -1,0 +1,22 @@
+{# Set distribution packages here #}
+{% set os_map = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': {
+            'server': 'nfs-kernel-server',
+            'client': 'nfs-common',
+        }
+    },
+    'RedHat': {}
+}) %}
+
+{# Settings dictionary with default values #}
+{% set nfs_settings = {
+    'hosts': '127.0.0.1',
+    'server': '127.0.0.1'
+} %}
+
+{# Merge the os_map with the settings dictionary #}
+{% do nfs_settings.update(os_map) %}
+
+{# Merge pillar data with the settings #}
+{% do nfs_settings.update(salt['pillar.get']('services:nfs', {})) %}

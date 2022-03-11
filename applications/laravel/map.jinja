@@ -1,0 +1,39 @@
+{% from 'applications/map.jinja' import apps_settings with context %}
+
+{# Settings dictionary with default values #}
+{% set laravel_settings = {} %}
+
+{# Set applications data #}
+{% set applist = [] %}
+
+{% if apps_settings['applications'] %}
+{% for app in apps_settings['applications'] %}
+{% if app['type'] == 'laravel' %}
+
+{% do applist.append({
+    'key': salt['pillar.get']('applications:' + app['type'] + ':' + app['name'] + ':key', ''),
+    'cache': {
+        'type': 'redis',
+	'host': '127.0.0.1',
+	'port': '6379'
+    },
+    'session': {
+        'type': 'redis',
+	'host': '127.0.0.1',
+	'port': '6379'
+    },
+}) %}
+
+{% do applist.append(app) %}
+
+{% endif %}
+{% endfor %}
+{% endif %}
+{% do laravel_settings.update({'applications': applist}) %}
+
+{% for app in laravel_settings.applications %}
+{% do app.pop('cache') %}
+{% do app.update({'cache': salt['pillar.get']('applications:' + app['type'] + ':' + app['name'] + ':cache', 'files')}) %}
+{% do app.pop('session') %}
+{% do app.update({'session': salt['pillar.get']('applications:' + app['type'] + ':' + app['name'] + ':session', 'files')}) %}
+{% endfor %}

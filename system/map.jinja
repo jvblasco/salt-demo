@@ -1,0 +1,9 @@
+{# Settings dictionary with default values #}
+{% set system_settings = {
+    'hostname': grains['id'],
+    'timezone': 'Europe/Madrid',
+    'hosts': {}
+} %}
+
+{# Merge pillar data with the settings #}
+{% do system_settings.update(salt['pillar.get']('system', {})) %}

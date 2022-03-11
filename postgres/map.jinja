@@ -1,0 +1,32 @@
+{# Set distribution packages here #}
+{% set os_map = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': {
+            'server': 'postgresql-9.5'
+        }
+    },
+    'RedHat': {}
+}) %}
+
+{# Settings dictionary with default values #}
+{% set postgres_settings = {
+    'bind_address': '0.0.0.0',
+    'hostname': salt['pillar.get']('system:hostname', 'localhost'),
+    'backup_retention': 10,
+    'max_connections': 500,
+    'innodb_buffer': '128M',
+    'innodb_lock_timeout': 50,
+    'wait_timeout': 50,
+    'replication': False,
+    'max_allowed_packet': '512M',
+    'host': '127.0.0.1',
+    'admin_password': 'test123',
+    'devs_password': 'test456'
+} %}
+
+{# Merge the os_map with the settings dictionary #}
+{% do postgres_settings.update(os_map) %}
+
+{# Merge pillar data with the settings #}
+{% do postgres_settings.update(salt['pillar.get']('services:postgres', {})) %}
+{% do postgres_settings.update(salt['pillar.get']('services:postgres:config', {})) %}

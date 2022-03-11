@@ -1,0 +1,28 @@
+{# Set distribution packages here #}
+{% set os_map = salt['grains.filter_by']({
+    'Debian': {
+        'pkgs': {
+            'server': 'haproxy',
+        }
+    },
+    'RedHat': {}
+}) %}
+
+{# Settings dictionary with default values #}
+{% set haproxy_settings = {
+    'bufsize': '16384',
+    'httpmaxhdr': '101',
+    'sticky_sessions': True,
+    'stats': {
+        'uri': '/balancingstats',
+        'user': 'sebadmin',
+        'password': 'sebafactory123'
+    },
+    'frontends': {}
+} %}
+
+{# Merge the os_map with the settings dictionary #}
+{% do haproxy_settings.update(os_map) %}
+
+{# Merge pillar data with the settings #}
+{% do haproxy_settings.update(salt['pillar.get']('services:haproxy', {})) %}

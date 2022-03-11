@@ -1,0 +1,34 @@
+{# Settings dictionary with default values #}
+{% set php_settings = {
+    'version': 7.0,
+    'ioncube': False,
+    'timezone': salt['pillar.get']('system:timezone', 'Europe/Madrid')
+} %}
+
+{# Merge pillar data with the settings #}
+{% do php_settings.update(salt['pillar.get']('services:php', {})) %}
+
+{# Set pools data #}
+{% set pools = {
+    'users': {
+        'memory_limit': '256M',
+        'max_execution_time': '30',
+        'max_requests': '100',
+        'min_spare_servers': '5',
+        'start_servers': '10',
+        'max_spare_servers': '20',
+        'max_children': '30'
+    },
+    'admins': {
+        'memory_limit': '1024M',
+        'max_execution_time': '1200',
+        'max_requests': '50',
+        'min_spare_servers': '5',
+        'start_servers': '10',
+        'max_spare_servers': '10',
+        'max_children': '15'
+    }
+} %}
+{% do php_settings.update({'pools': pools}) %}
+{% do php_settings['pools']['users'].update(salt['pillar.get']('services:php:pools:users', {})) %}
+{% do php_settings['pools']['admins'].update(salt['pillar.get']('services:php:pools:admins', {})) %}
